@@ -1,37 +1,23 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard</title>
-</head>
-<body>
-    <p>Welcome, {{ user.username }}! <a href="{% url 'logout' %}">Logout</a></p>
-    <h1>Dashboard</h1>
+{% extends 'core/base.html' %}
 
-    <h2>Open Requests</h2>
-    <ul>
-        {% for req in open_requests %}
-            <li>{{ req.title }} - {{ req.get_priority_display }}</li>
-        {% empty %}
-            <li>No open requests.</li>
-        {% endfor %}
-    </ul>
-
-    <h2>In Progress Requests</h2>
-    <ul>
-        {% for req in in_progress_requests %}
-            <li>{{ req.title }} - {{ req.get_priority_display }}</li>
-        {% empty %}
-            <li>No in-progress requests.</li>
-        {% endfor %}
-    </ul>
-
-    <h2>Requests by Category</h2>
-    <ul>
-        {% for category in requests_by_category %}
-            <li>{{ category.name }} ({{ category.num_requests }})</li>
-        {% empty %}
-            <li>No requests in any category.</li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
+{% block content %}
+<h1>Dashboard</h1>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Active Contracts</h5>
+                <p class="card-text h1">{{ active_contracts }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Expiring in Next 30 Days</h5>
+                <p class="card-text h1">{{ expiring_soon }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

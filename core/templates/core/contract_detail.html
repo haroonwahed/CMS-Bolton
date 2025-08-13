@@ -1,0 +1,32 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">{{ contract.title }}</h2>
+        <span class="badge bg-primary">{{ contract.get_status_display }}</span>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Counterparty:</strong> {{ contract.counterparty }}</p>
+                <p><strong>Type:</strong> {{ contract.contract_type }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Execution Date:</strong> {{ contract.execution_date|date:"F d, Y" }}</p>
+                <p><strong>Effective Date:</strong> {{ contract.effective_date|date:"F d, Y" }}</p>
+                <p><strong>Expiration Date:</strong> {{ contract.expiration_date|date:"F d, Y" }}</p>
+            </div>
+        </div>
+        <hr>
+        <p><strong>Description:</strong></p>
+        <p>{{ contract.description|linebreaksbr }}</p>
+    </div>
+    <div class="card-footer text-end">
+        <a href="{{ contract.contract_document.url }}" class="btn btn-success" target="_blank">View Document</a>
+        <a href="#" class="btn btn-secondary">Edit</a>
+        <a href="#" class="btn btn-danger">Delete</a>
+    </div>
+</div>
+<a href="{% url 'contract_list' %}" class="btn btn-outline-secondary mt-3">Back to List</a>
+{% endblock %}
