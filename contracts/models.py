@@ -164,3 +164,58 @@ class LegalTask(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class RiskLog(models.Model):
+    class RiskLevel(models.TextChoices):
+        LOW = 'LOW', 'Low'
+        MEDIUM = 'MEDIUM', 'Medium'
+        HIGH = 'HIGH', 'High'
+
+    class MitigationStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        MITIGATED = 'MITIGATED', 'Mitigated'
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    risk_level = models.CharField(max_length=10, choices=RiskLevel.choices, default=RiskLevel.MEDIUM)
+    linked_contract = models.ForeignKey(Contract, on_delete=models.SET_NULL, null=True, blank=True, related_name='risk_logs')
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owned_risks')
+    mitigation_steps = models.TextField()
+    mitigation_status = models.CharField(max_length=20, choices=MitigationStatus.choices, default=MitigationStatus.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class ComplianceChecklist(models.Model):
+    class ComplianceStatus(models.TextChoices):
+        NOT_STARTED = 'NOT_STARTED', 'Not Started'
+        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        COMPLETE = 'COMPLETE', 'Complete'
+
+    name = models.CharField(max_length=200)
+    regulation = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, choices=ComplianceStatus.choices, default=ComplianceStatus.NOT_STARTED)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_checklists')
+    due_date = models.DateField(null=True, blank=True)
+    attachments = models.FileField(upload_to='compliance_attachments/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
+class ChecklistItem(models.Model):
+    checklist = models.ForeignKey(ComplianceChecklist, on_delete=models.CASCADE, related_name='items')
+    text = models.CharField(max_length=500)
+    is_checked = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.text

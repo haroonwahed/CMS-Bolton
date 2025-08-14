@@ -53,19 +53,49 @@ Dashboard
 </div>
 
 <!-- Recent Activity Section -->
+<div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Notes</h3>
+        <div class="space-y-4">
+            {% for note in recent_notes %}
+                <div class="border-l-2 pl-4 border-gray-200">
+                    <p class="text-gray-800">"{{ note.text|truncatewords:15 }}"</p>
+                    <p class="text-sm text-gray-500 mt-1">
+                        <span class="font-semibold">{{ note.created_by.username }}</span> on
+                        <a href="{% url 'contracts:contract_detail' note.contract.pk %}" class="text-blue-600 hover:underline">{{ note.contract.title }}</a>
+                    </p>
+                </div>
+            {% empty %}
+                <p class="text-gray-500">No recent notes.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Top High-Risk Items</h3>
+        <div class="space-y-4">
+             {% for risk in top_risks %}
+                <div>
+                    <a href="{% url 'contracts:risk_log_update' risk.pk %}" class="font-semibold text-blue-600 hover:underline">{{ risk.title }}</a>
+                    <p class="text-sm text-gray-500">{{ risk.mitigation_status }}</p>
+                </div>
+            {% empty %}
+                <p class="text-gray-500">No high-risk items.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Compliance Section -->
 <div class="mt-8 bg-white p-6 rounded-lg shadow-lg">
-    <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Notes</h3>
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Upcoming Compliance Deadlines</h3>
     <div class="space-y-4">
-        {% for note in recent_notes %}
-            <div class="border-l-2 pl-4 border-gray-200">
-                <p class="text-gray-800">"{{ note.text|truncatewords:15 }}"</p>
-                <p class="text-sm text-gray-500 mt-1">
-                    <span class="font-semibold">{{ note.created_by.username }}</span> on
-                    <a href="{% url 'contracts:contract_detail' note.contract.pk %}" class="text-blue-600 hover:underline">{{ note.contract.title }}</a>
-                </p>
+        {% for checklist in upcoming_checklists %}
+            <div class="border-l-2 pl-4 border-yellow-400">
+                <a href="{% url 'contracts:compliance_checklist_detail' checklist.pk %}" class="font-semibold text-blue-600 hover:underline">{{ checklist.name }}</a>
+                <p class="text-sm text-gray-500">Due: {{ checklist.due_date }}</p>
             </div>
         {% empty %}
-            <p class="text-gray-500">No recent notes.</p>
+            <p class="text-gray-500">No upcoming compliance deadlines.</p>
         {% endfor %}
     </div>
 </div>
