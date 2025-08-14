@@ -1,11 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic.edit import CreateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, View, TemplateView
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count
 from datetime import date, timedelta
-from .forms import RegistrationForm
-from .models import Contract, Note
+
+from .forms import RegistrationForm, NegotiationThreadForm
+from .models import Contract, Note, TrademarkRequest, LegalTask
+
 
 class SignUpView(CreateView):
     form_class = RegistrationForm
@@ -24,24 +27,20 @@ def index(request):
 def dashboard(request):
     user_contracts = Contract.objects.filter(created_by=request.user)
 
-    # Contract counts by status
     status_counts = user_contracts.values('status').annotate(count=Count('status'))
     status_data = {item['status']: item['count'] for item in status_counts}
 
-    # Upcoming milestones (next 30 days)
     upcoming_milestones = user_contracts.filter(
         milestone_date__gte=date.today(),
         milestone_date__lte=date.today() + timedelta(days=30)
     ).order_by('milestone_date')
 
-    # Overdue milestones
     overdue_milestones = user_contracts.filter(
         milestone_date__lt=date.today()
     ).exclude(
         status__in=[Contract.ContractStatus.RENEWAL_TERMINATION]
     ).order_by('milestone_date')
 
-    # Recent notes
     recent_notes = Note.objects.filter(contract__in=user_contracts).order_by('-timestamp')[:5]
 
     context = {
@@ -52,12 +51,6 @@ def dashboard(request):
         'total_contracts': user_contracts.count(),
     }
     return render(request, 'dashboard.html', context)
-
-
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, View
-from django.shortcuts import get_object_or_404
-from .forms import NegotiationThreadForm
 
 
 class AddNegotiationNoteView(LoginRequiredMixin, View):
@@ -80,18 +73,18 @@ class ContractListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Contract.objects.filter(created_by=self.request.user)
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['negotiation_form'] = NegotiationThreadForm()
-        return context
-
 
 class ContractDetailView(LoginRequiredMixin, DetailView):
     model = Contract
     template_name = 'contracts/contract_detail.html'
 
     def get_queryset(self):
-        return Contract.objects.filter(created_by=self.request.user)
+        return self.model.objects.filter(created_by=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['negotiation_form'] = NegotiationThreadForm()
+        return context
 
 
 class ContractCreateView(LoginRequiredMixin, CreateView):
@@ -113,3 +106,54 @@ class ContractUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_queryset(self):
         return Contract.objects.filter(created_by=self.request.user)
+
+
+class TrademarkRequestListView(LoginRequiredMixin, ListView):
+    model = TrademarkRequest
+    template_name = 'contracts/trademark_request_list.html'
+    context_object_name = 'trademark_requests'
+
+    def get_queryset(self):
+        return TrademarkRequest.objects.filter(owner=self.request.user)
+
+
+class LegalTaskKanbanView(LoginRequiredMixin, TemplateView):
+    template_name = 'contracts/legal_task_board.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # For now, showing tasks assigned to the user. This could be expanded to teams.
+        tasks = LegalTask.objects.filter(assigned_to=self.request.user)
+
+        # Prepare data in a list of tuples for easy iteration in the template
+        tasks_by_status = []
+        for status_key, status_display in LegalTask.TaskStatus.choices:
+            tasks_in_status = tasks.filter(status=status_key)
+            tasks_by_status.append((status_display, tasks_in_status))
+
+        context['tasks_by_status'] = tasks_by_status
+        return context
+
+
+class LegalTaskCreateView(LoginRequiredMixin, CreateView):
+    model = LegalTask
+    template_name = 'contracts/legal_task_form.html'
+    fields = ['title', 'task_type', 'priority', 'subject', 'is_recurring', 'assigned_to', 'due_date', 'status']
+    success_url = reverse_lazy('contracts:legal_task_board')
+
+    def form_valid(self, form):
+        # If you add a 'creator' field to LegalTask, set it here:
+        # form.instance.creator = self.request.user
+        return super().form_valid(form)
+
+
+class LegalTaskUpdateView(LoginRequiredMixin, UpdateView):
+    model = LegalTask
+    template_name = 'contracts/legal_task_form.html'
+    fields = ['title', 'task_type', 'priority', 'subject', 'is_recurring', 'assigned_to', 'due_date', 'status']
+    success_url = reverse_lazy('contracts:legal_task_board')
+
+    def get_queryset(self):
+        # Users can only edit tasks assigned to them.
+        # This could be adjusted based on team/permission rules.
+        return LegalTask.objects.filter(assigned_to=self.request.user)
