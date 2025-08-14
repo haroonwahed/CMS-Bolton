@@ -1,5 +1,20 @@
 from django.contrib import admin
-from .models import Contract, Tag, Note, WorkflowStep, ContractVersion, NegotiationThread
+from .models import Contract, Tag, Note, WorkflowStep, ContractVersion, NegotiationThread, TrademarkRequest, LegalTask
+
+@admin.register(TrademarkRequest)
+class TrademarkRequestAdmin(admin.ModelAdmin):
+    list_display = ('region', 'class_number', 'status', 'request_date', 'renewal_deadline', 'owner')
+    list_filter = ('status', 'region')
+    search_fields = ('region', 'class_number')
+    autocomplete_fields = ['owner']
+
+@admin.register(LegalTask)
+class LegalTaskAdmin(admin.ModelAdmin):
+    list_display = ('title', 'task_type', 'priority', 'status', 'assigned_to', 'due_date')
+    list_filter = ('status', 'priority', 'is_recurring', 'assigned_to')
+    search_fields = ('title', 'subject')
+    autocomplete_fields = ['assigned_to']
+
 
 class WorkflowStepInline(admin.TabularInline):
     model = WorkflowStep
