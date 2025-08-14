@@ -102,3 +102,19 @@ class ContractVersion(models.Model):
 
     def __str__(self):
         return f'{self.contract.title} - Version {self.version_number}'
+
+
+class NegotiationThread(models.Model):
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='negotiation_threads')
+    round_number = models.PositiveIntegerField()
+    internal_note = models.TextField(blank=True)
+    external_note = models.TextField(blank=True)
+    attachment = models.FileField(upload_to='negotiation_attachments/', blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='negotiation_posts')
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f'Negotiation Round {self.round_number} for {self.contract.title}'

@@ -1,15 +1,24 @@
 from django.contrib import admin
-from .models import Contract, Tag, Note, WorkflowStep, ContractVersion
+from .models import Contract, Tag, Note, WorkflowStep, ContractVersion, NegotiationThread
 
 class WorkflowStepInline(admin.TabularInline):
     model = WorkflowStep
     extra = 1
     autocomplete_fields = ['assigned_to']
+    ordering = ['-created_at']
 
 class ContractVersionInline(admin.TabularInline):
     model = ContractVersion
     extra = 0
     readonly_fields = ('timestamp',)
+    ordering = ['-version_number']
+
+class NegotiationThreadInline(admin.TabularInline):
+    model = NegotiationThread
+    extra = 0
+    readonly_fields = ('timestamp', 'author')
+    autocomplete_fields = ['author']
+    ordering = ['-timestamp']
 
 @admin.register(Contract)
 class ContractAdmin(admin.ModelAdmin):
@@ -18,7 +27,7 @@ class ContractAdmin(admin.ModelAdmin):
     search_fields = ('title', 'counterparty')
     readonly_fields = ('created_by', 'created_at', 'updated_at')
     autocomplete_fields = ['tags', 'created_by']
-    inlines = [WorkflowStepInline, ContractVersionInline]
+    inlines = [WorkflowStepInline, ContractVersionInline, NegotiationThreadInline]
 
 
 @admin.register(Tag)
@@ -52,3 +61,11 @@ class ContractVersionAdmin(admin.ModelAdmin):
     list_filter = ('timestamp', 'approved_by')
     search_fields = ('contract__title', 'content_snapshot')
     autocomplete_fields = ['contract', 'approved_by']
+
+
+@admin.register(NegotiationThread)
+class NegotiationThreadAdmin(admin.ModelAdmin):
+    list_display = ('contract', 'round_number', 'author', 'timestamp')
+    list_filter = ('timestamp', 'author')
+    search_fields = ('contract__title', 'internal_note', 'external_note')
+    autocomplete_fields = ['contract', 'author']

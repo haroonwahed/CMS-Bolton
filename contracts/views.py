@@ -55,7 +55,21 @@ def dashboard(request):
 
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, View
+from django.shortcuts import get_object_or_404
+from .forms import NegotiationThreadForm
+
+
+class AddNegotiationNoteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        contract = get_object_or_404(Contract, pk=pk, created_by=request.user)
+        form = NegotiationThreadForm(request.POST, request.FILES)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.contract = contract
+            note.author = request.user
+            note.save()
+        return redirect('contracts:contract_detail', pk=contract.pk)
 
 
 class ContractListView(LoginRequiredMixin, ListView):
@@ -65,6 +79,11 @@ class ContractListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Contract.objects.filter(created_by=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['negotiation_form'] = NegotiationThreadForm()
+        return context
 
 
 class ContractDetailView(LoginRequiredMixin, DetailView):
