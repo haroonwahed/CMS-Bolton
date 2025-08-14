@@ -1,5 +1,15 @@
 from django.contrib import admin
-from .models import Contract, Tag, Note
+from .models import Contract, Tag, Note, WorkflowStep, ContractVersion
+
+class WorkflowStepInline(admin.TabularInline):
+    model = WorkflowStep
+    extra = 1
+    autocomplete_fields = ['assigned_to']
+
+class ContractVersionInline(admin.TabularInline):
+    model = ContractVersion
+    extra = 0
+    readonly_fields = ('timestamp',)
 
 @admin.register(Contract)
 class ContractAdmin(admin.ModelAdmin):
@@ -7,7 +17,8 @@ class ContractAdmin(admin.ModelAdmin):
     list_filter = ('status', 'contract_type', 'jurisdiction')
     search_fields = ('title', 'counterparty')
     readonly_fields = ('created_by', 'created_at', 'updated_at')
-    autocomplete_fields = ['tags']
+    autocomplete_fields = ['tags', 'created_by']
+    inlines = [WorkflowStepInline, ContractVersionInline]
 
 
 @admin.register(Tag)
@@ -21,6 +32,23 @@ class NoteAdmin(admin.ModelAdmin):
     list_filter = ('timestamp', 'created_by')
     search_fields = ('text', 'contract__title')
     readonly_fields = ('created_by', 'timestamp')
+    autocomplete_fields = ['contract', 'created_by']
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('contract', 'created_by')
+
+
+@admin.register(WorkflowStep)
+class WorkflowStepAdmin(admin.ModelAdmin):
+    list_display = ('contract', 'step_type', 'assigned_to', 'status', 'due_date')
+    list_filter = ('status', 'step_type', 'assigned_to')
+    search_fields = ('contract__title', 'notes')
+    autocomplete_fields = ['contract', 'assigned_to']
+
+
+@admin.register(ContractVersion)
+class ContractVersionAdmin(admin.ModelAdmin):
+    list_display = ('contract', 'version_number', 'approved_by', 'timestamp')
+    list_filter = ('timestamp', 'approved_by')
+    search_fields = ('contract__title', 'content_snapshot')
+    autocomplete_fields = ['contract', 'approved_by']
