@@ -1,5 +1,28 @@
 from django.contrib import admin
-from .models import Contract, Tag, Note, WorkflowStep, ContractVersion, NegotiationThread, TrademarkRequest, LegalTask
+from .models import (
+    Contract, Tag, Note, WorkflowStep, ContractVersion, NegotiationThread,
+    TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem
+)
+
+@admin.register(RiskLog)
+class RiskLogAdmin(admin.ModelAdmin):
+    list_display = ('title', 'risk_level', 'mitigation_status', 'owner', 'linked_contract')
+    list_filter = ('risk_level', 'mitigation_status', 'owner')
+    search_fields = ('title', 'description', 'mitigation_steps')
+    autocomplete_fields = ['owner', 'linked_contract']
+
+class ChecklistItemInline(admin.TabularInline):
+    model = ChecklistItem
+    extra = 1
+
+@admin.register(ComplianceChecklist)
+class ComplianceChecklistAdmin(admin.ModelAdmin):
+    list_display = ('name', 'regulation', 'status', 'due_date', 'reviewed_by')
+    list_filter = ('status', 'due_date', 'reviewed_by')
+    search_fields = ('name', 'regulation')
+    autocomplete_fields = ['reviewed_by']
+    inlines = [ChecklistItemInline]
+
 
 @admin.register(TrademarkRequest)
 class TrademarkRequestAdmin(admin.ModelAdmin):
