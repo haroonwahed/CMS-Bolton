@@ -2,41 +2,52 @@
 
 {% block title %}My Contracts{% endblock %}
 
-{% block content %}
-<div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold">My Contracts</h2>
-    <a href="{% url 'contracts:contract_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">New Contract</a>
-</div>
+{% block page_title %}
+My Contracts
+{% endblock %}
 
-<div class="bg-white p-6 rounded-lg shadow-md">
-    <table class="w-full">
-        <thead>
-            <tr class="border-b">
-                <th class="text-left py-2">Title</th>
-                <th class="text-left py-2">Counterparty</th>
-                <th class="text-left py-2">Status</th>
-                <th class="text-left py-2">Value</th>
-                <th class="text-left py-2">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for contract in contracts %}
-                <tr class="border-b">
-                    <td class="py-2">{{ contract.title }}</td>
-                    <td class="py-2">{{ contract.counterparty }}</td>
-                    <td class="py-2">{{ contract.get_status_display }}</td>
-                    <td class="py-2">${{ contract.value|default:"N/A" }}</td>
-                    <td class="py-2">
-                        <a href="{% url 'contracts:contract_detail' contract.pk %}" class="text-blue-600 hover:underline">View</a>
-                        <a href="{% url 'contracts:contract_update' contract.pk %}" class="text-blue-600 hover:underline ml-4">Edit</a>
-                    </td>
-                </tr>
-            {% empty %}
+{% block page_actions %}
+<a href="{% url 'contracts:contract_create' %}" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 shadow-sm">New Contract</a>
+{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-lg">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                 <tr>
-                    <td colspan="5" class="py-4 text-center text-gray-600">You have not created any contracts yet.</td>
+                    <th scope="col" class="px-6 py-3">Title</th>
+                    <th scope="col" class="px-6 py-3">Counterparty</th>
+                    <th scope="col" class="px-6 py-3">Status</th>
+                    <th scope="col" class="px-6 py-3">Value</th>
+                    <th scope="col" class="px-6 py-3">Actions</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {% for contract in contracts %}
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                            {{ contract.title }}
+                        </th>
+                        <td class="px-6 py-4">{{ contract.counterparty }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 font-semibold leading-tight text-green-700 bg-green-100 rounded-full">
+                                {{ contract.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">${{ contract.value|default:"N/A" }}</td>
+                        <td class="px-6 py-4">
+                            <a href="{% url 'contracts:contract_detail' contract.pk %}" class="font-medium text-blue-600 hover:underline">View</a>
+                            <a href="{% url 'contracts:contract_update' contract.pk %}" class="font-medium text-blue-600 hover:underline ml-4">Edit</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-600">You have not created any contracts yet.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

@@ -8,4 +8,5 @@ urlpatterns = [
     path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),
     path('new/', views.ContractCreateView.as_view(), name='contract_create'),
     path('<int:pk>/edit/', views.ContractUpdateView.as_view(), name='contract_update'),
+    path('<int:pk>/add_note/', views.AddNegotiationNoteView.as_view(), name='add_negotiation_note'),
 ]
