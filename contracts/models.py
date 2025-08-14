@@ -14,12 +14,12 @@ class Tag(models.Model):
 class Contract(models.Model):
     class ContractStatus(models.TextChoices):
         DRAFT = 'DRAFT', 'Draft'
-        IN_REVIEW = 'IN_REVIEW', 'In Review'
+        INTERNAL_REVIEW = 'INTERNAL_REVIEW', 'Internal Review'
+        EXTERNAL_REVIEW = 'EXTERNAL_REVIEW', 'External Review'
         NEGOTIATION = 'NEGOTIATION', 'Negotiation'
-        SIGNED = 'SIGNED', 'Signed'
-        ACTIVE = 'ACTIVE', 'Active'
-        EXPIRED = 'EXPIRED', 'Expired'
-        TERMINATED = 'TERMINATED', 'Terminated'
+        SIGNATURE = 'SIGNATURE', 'Signature'
+        EXECUTION = 'EXECUTION', 'Execution'
+        RENEWAL_TERMINATION = 'RENEWAL_TERMINATION', 'Renewal/Termination'
 
     class ContractType(models.TextChoices):
         NDA = 'NDA', 'Non-Disclosure Agreement'
@@ -60,3 +60,61 @@ class Note(models.Model):
 
     def __str__(self):
         return f'Note by {self.created_by} on {self.contract.title} at {self.timestamp.strftime("%Y-%m-%d %H:%M")}'
+
+
+class WorkflowStep(models.Model):
+    class StepType(models.TextChoices):
+        INTERNAL_REVIEW = 'INTERNAL_REVIEW', 'Internal Review'
+        EXTERNAL_REVIEW = 'EXTERNAL_REVIEW', 'External Review'
+        NEGOTIATION = 'NEGOTIATION', 'Negotiation'
+        SIGNATURE = 'SIGNATURE', 'Signature'
+        EXECUTION = 'EXECUTION', 'Execution'
+
+    class StepStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        COMPLETED = 'COMPLETED', 'Completed'
+        SKIPPED = 'SKIPPED', 'Skipped'
+
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='workflow_steps')
+    step_type = models.CharField(max_length=20, choices=StepType.choices)
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='workflow_tasks')
+    status = models.CharField(max_length=20, choices=StepStatus.choices, default=StepStatus.PENDING)
+    notes = models.TextField(blank=True)
+    due_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.get_step_type_display()} for {self.contract.title}'
+
+
+class ContractVersion(models.Model):
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='versions')
+    version_number = models.PositiveIntegerField()
+    content_snapshot = models.TextField()
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_versions')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('contract', 'version_number')
+        ordering = ['-version_number']
+
+    def __str__(self):
+        return f'{self.contract.title} - Version {self.version_number}'
+
+
+class NegotiationThread(models.Model):
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='negotiation_threads')
+    round_number = models.PositiveIntegerField()
+    internal_note = models.TextField(blank=True)
+    external_note = models.TextField(blank=True)
+    attachment = models.FileField(upload_to='negotiation_attachments/', blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='negotiation_posts')
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f'Negotiation Round {self.round_number} for {self.contract.title}'

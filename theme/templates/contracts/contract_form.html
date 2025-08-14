@@ -2,10 +2,13 @@
 
 {% block title %}{% if form.instance.pk %}Edit Contract{% else %}New Contract{% endif %}{% endblock %}
 
+{% block page_title %}
+{% if form.instance.pk %}Edit Contract{% else %}New Contract{% endif %}
+{% endblock %}
+
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-6">{% if form.instance.pk %}Edit Contract{% else %}Create a New Contract{% endif %}</h2>
-    <form method="post">
+<div class="bg-white p-8 rounded-lg shadow-md">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="grid grid-cols-1 gap-6">
             <div>
@@ -42,24 +45,10 @@
                 <p class="text-sm text-gray-500 mt-1">Hold down "Control", or "Command" on a Mac, to select more than one.</p>
             </div>
         </div>
-        <div class="mt-8">
-            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Save Contract</button>
+        <div class="mt-8 flex justify-end space-x-4">
+            <a href="{% if form.instance.pk %}{% url 'contracts:contract_detail' form.instance.pk %}{% else %}{% url 'contracts:contract_list' %}{% endif %}" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300">Cancel</a>
+            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Save Contract</button>
         </div>
     </form>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // A little bit of JS to add Tailwind classes to the form fields
-    document.addEventListener('DOMContentLoaded', function() {
-        const fields = ['title', 'counterparty', 'contract_type', 'jurisdiction', 'value', 'status', 'milestone_date', 'tags'];
-        fields.forEach(function(field) {
-            const element = document.getElementById('id_' + field);
-            if (element) {
-                element.classList.add('mt-1', 'block', 'w-full', 'rounded-md', 'border-gray-300', 'shadow-sm', 'focus:border-indigo-500', 'focus:ring-indigo-500', 'sm:text-sm');
-            }
-        });
-    });
-</script>
 {% endblock %}

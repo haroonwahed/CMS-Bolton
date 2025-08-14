@@ -22,31 +22,54 @@ def index(request):
 
 @login_required
 def dashboard(request):
+    user_contracts = Contract.objects.filter(created_by=request.user)
+
     # Contract counts by status
-    status_counts = Contract.objects.filter(created_by=request.user).values('status').annotate(count=Count('status'))
+    status_counts = user_contracts.values('status').annotate(count=Count('status'))
     status_data = {item['status']: item['count'] for item in status_counts}
 
     # Upcoming milestones (next 30 days)
-    upcoming_milestones = Contract.objects.filter(
-        created_by=request.user,
+    upcoming_milestones = user_contracts.filter(
         milestone_date__gte=date.today(),
         milestone_date__lte=date.today() + timedelta(days=30)
     ).order_by('milestone_date')
 
+    # Overdue milestones
+    overdue_milestones = user_contracts.filter(
+        milestone_date__lt=date.today()
+    ).exclude(
+        status__in=[Contract.ContractStatus.RENEWAL_TERMINATION]
+    ).order_by('milestone_date')
+
     # Recent notes
-    recent_notes = Note.objects.filter(contract__created_by=request.user).order_by('-timestamp')[:5]
+    recent_notes = Note.objects.filter(contract__in=user_contracts).order_by('-timestamp')[:5]
 
     context = {
         'status_data': status_data,
         'upcoming_milestones': upcoming_milestones,
+        'overdue_milestones': overdue_milestones,
         'recent_notes': recent_notes,
-        'total_contracts': Contract.objects.filter(created_by=request.user).count(),
+        'total_contracts': user_contracts.count(),
     }
     return render(request, 'dashboard.html', context)
 
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, View
+from django.shortcuts import get_object_or_404
+from .forms import NegotiationThreadForm
+
+
+class AddNegotiationNoteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        contract = get_object_or_404(Contract, pk=pk, created_by=request.user)
+        form = NegotiationThreadForm(request.POST, request.FILES)
+        if form.is_valid():
+            note = form.save(commit=False)
+            note.contract = contract
+            note.author = request.user
+            note.save()
+        return redirect('contracts:contract_detail', pk=contract.pk)
 
 
 class ContractListView(LoginRequiredMixin, ListView):
@@ -56,6 +79,11 @@ class ContractListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Contract.objects.filter(created_by=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['negotiation_form'] = NegotiationThreadForm()
+        return context
 
 
 class ContractDetailView(LoginRequiredMixin, DetailView):
