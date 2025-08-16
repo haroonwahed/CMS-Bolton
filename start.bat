@@ -1,0 +1,16 @@
+@echo off
+echo Activating virtual environment...
+call venv\Scripts\activate
+
+echo Pulling latest changes from main branch...
+git fetch origin
+git reset --hard origin/main
+
+echo Installing Python dependencies...
+pip install -r requirements.txt
+
+echo Applying migrations...
+python manage.py migrate
+
+echo Starting Django server...
+python manage.py runserver
