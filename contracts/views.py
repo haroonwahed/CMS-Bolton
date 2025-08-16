@@ -27,8 +27,17 @@ def index(request):
 def dashboard(request):
     # Contract data
     user_contracts = Contract.objects.filter(created_by=request.user)
-    status_counts = user_contracts.values('status').annotate(count=Count('status'))
-    status_data = {item['status']: item['count'] for item in status_counts}
+    status_counts = {item['status']: item['count'] for item in user_contracts.values('status').annotate(count=Count('status'))}
+
+    pipeline_stages = [
+        ('DRAFT', 'Draft'),
+        ('INTERNAL_REVIEW', 'Internal Review'),
+        ('NEGOTIATION', 'Negotiation'),
+        ('SIGNATURE', 'Signature'),
+    ]
+    pipeline_data = [(display, status_counts.get(key, 0)) for key, display in pipeline_stages]
+
+    # Milestone data
     upcoming_milestones = user_contracts.filter(
         milestone_date__gte=date.today(),
         milestone_date__lte=date.today() + timedelta(days=30)
@@ -39,11 +48,8 @@ def dashboard(request):
         status__in=[Contract.ContractStatus.RENEWAL_TERMINATION]
     ).order_by('milestone_date')
 
-    # Recent notes
-    recent_notes = Note.objects.filter(contract__in=user_contracts).order_by('-timestamp')[:5]
-
     # Risk data
-    top_risks = RiskLog.objects.filter(risk_level='HIGH').order_by('-updated_at')[:3]
+    top_risks = RiskLog.objects.filter(risk_level='HIGH', owner=request.user).order_by('-updated_at')[:3]
 
     # Compliance data
     upcoming_checklists = ComplianceChecklist.objects.filter(
@@ -52,11 +58,10 @@ def dashboard(request):
     ).order_by('due_date')
 
     context = {
-        'status_data': status_data,
+        'total_contracts': user_contracts.count(),
+        'pipeline_data': pipeline_data,
         'upcoming_milestones': upcoming_milestones,
         'overdue_milestones': overdue_milestones,
-        'recent_notes': recent_notes,
-        'total_contracts': user_contracts.count(),
         'top_risks': top_risks,
         'upcoming_checklists': upcoming_checklists,
     }
